@@ -7,6 +7,8 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
+# Import tools 
+from tools import search_tool, save_tool, wiki_tool
 
 load_dotenv()
 
@@ -49,26 +51,33 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 ).partial(format_instructions=parser.get_format_instructions())
 
+# Define the tools to be used by the agent from import
+tools = [search_tool, save_tool, wiki_tool]
+
 # Create the agent and executor
 agent = create_tool_calling_agent(
     llm = llm,
     prompt = prompt, 
-    tools = []
+    tools = tools
 )
 
 agent_executor = AgentExecutor(
     agent=agent,
-    tools=[],
+    tools=tools,
     verbose=True, # To see the agent's reasoning and steps
 )
 
+
+# Get user input for query
+query = input("What topic do you need help learning?\n")
 # Need to pass in the variable {query} to the agent which is not filled in by agent executor
-raw_response = agent_executor.invoke({"query": "What is the impact of climate change on global agriculture?"})
+raw_response = agent_executor.invoke({"query": query})
 
 
 # Parse the raw response from the agent into a structured format (ResearchResponse)
 # Model could mess up so implement error handling here
 try:
     structured_response = parser.parse(raw_response.get('output'))
+    print(structured_response)
 except Exception as e:
     print(f"Error parsing response: {e}\n Raw Response: {raw_response}")
